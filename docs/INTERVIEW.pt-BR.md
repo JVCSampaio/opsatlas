@@ -1,28 +1,28 @@
 # Apresentação do projeto
 
-## Pitch de 40 segundos
+## Descrição curta
 
-“Criei o OpsAtlas, uma central de conhecimento para operações. O usuário cadastra runbooks, faz perguntas e recebe a resposta junto da fonte e da revisão. A aplicação usa Python/FastAPI e Angular. Na configuração completa, PostgreSQL registra documentos e uma outbox transacional; Kafka entrega a ingestão para um worker idempotente; MongoDB recebe a auditoria. Airflow executa uma verificação diária de retrieval. Incluí métricas, traces, containers, testes de navegador e um deploy Kubernetes reproduzível.”
+O OpsAtlas é uma aplicação para consultar procedimentos técnicos. O usuário cadastra documentos e faz perguntas. A resposta mostra os trechos utilizados e a revisão da fonte. A API usa Python/FastAPI e a interface usa Angular. A configuração completa inclui indexação por Kafka, PostgreSQL, auditoria MongoDB e avaliação da busca pelo Airflow.
 
 ## Demonstração de três minutos
 
 1. Carregue os exemplos e mostre os documentos prontos.
-2. Pergunte sobre Kafka consumer lag e abra a citação com revisão.
-3. Faça uma pergunta sem evidência e mostre a recusa.
-4. Cadastre um runbook e atualize a mesma origem: a revisão aumenta.
-5. Execute Quality checks e explique que a suíte mede retrieval, não inteligência geral.
-6. Abra a CI e os arquivos de infraestrutura; mostre quais execuções foram comprovadas.
+2. Pergunte sobre o atraso dos consumidores Kafka e abra a fonte.
+3. Faça uma pergunta sem resposta nos exemplos.
+4. Cadastre um documento e atualize o mesmo identificador para criar uma revisão.
+5. Abra Avaliação e execute os testes da busca.
+6. Mostre os resultados da CI e os manifests de infraestrutura.
 
-## Decisões que vale explicar
+## Decisões técnicas
 
-- **Por que outbox?** Evita salvar no banco e perder o evento na publicação. A entrega pode repetir; a idempotência está no consumidor.
-- **Por que SQL e Mongo?** SQL é a autoridade transacional; Mongo é uma projeção de auditoria, com UUID estável.
-- **Como reduz alucinação?** Retrieval limitado, recusa sem evidência e validação dos IDs citados. Isso não prova automaticamente a verdade de cada frase.
-- **Por que dois modos?** A pessoa consegue testar sem GPU/chaves. O adapter conecta um LLM e embeddings reais quando configurados.
-- **O que muda em escala?** Ranking no banco/índice vetorial, migrações, autenticação por tenant, DLQ, métricas de lag e serviços de infraestrutura gerenciados.
+- A outbox grava o evento junto do documento. A publicação pode repetir; o consumidor ignora revisões já indexadas.
+- O SQL guarda o registro original da auditoria. O MongoDB recebe uma cópia com UUID estável.
+- A consulta limita os trechos enviados ao LLM e valida os IDs citados. Isso não garante a veracidade de cada frase gerada.
+- O modo extrativo permite testar sem GPU ou chave. O modo LLM usa um provedor configurado.
+- Para bases maiores, faltam índice de busca no banco, migrações, autenticação por tenant e tratamento de eventos com falhas repetidas.
 
 ## Texto para currículo
 
-“OpsAtlas — aplicação de conhecimento operacional com Python/FastAPI e Angular/TypeScript; RAG com citações e controle de revisões, ingestão Kafka via outbox transacional, PostgreSQL, auditoria MongoDB, DAG de avaliação Airflow, observabilidade Prometheus/OpenTelemetry e infraestrutura Kubernetes.”
+OpsAtlas: aplicação de consulta de procedimentos técnicos com Python/FastAPI e Angular/TypeScript. RAG com fontes, documentos versionados, indexação por Kafka, PostgreSQL, auditoria MongoDB, avaliações Airflow, observabilidade e deploy Kubernetes.
 
-Apresente como projeto de portfólio. O código e os testes demonstram prática; não equivalem a anos de operação dessas tecnologias em produção. Use os resultados atuais de `VALIDATION.md` ao mencionar execução de infraestrutura.
+Apresente como projeto de portfólio. Consulte `VALIDATION.md` para descrever os testes executados.
