@@ -1,0 +1,74 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {version: '0.12.5', python-version: '3.12'}
+      - run: uv sync --frozen
+      - run: uv run ruff check . && uv run ruff format --check .
+      - run: uv run pytest --cov=opsatlas --cov-report=term-missing --cov-report=xml
+      - uses: actions/upload-artifact@v4
+        with: {name: coverage, path: coverage.xml}
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {version: '0.12.5', python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24', cache: npm, cache-dependency-path: web/package-lock.json}
+      - run: uv sync --frozen
+      - run: npm ci && npm run build && npx playwright install --with-deps chromium && npm run test:e2e
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: browser-evidence, path: 'docs/screenshots/'}
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {version: '0.12.5', python-version: '3.12'}
+      - run: uv sync --frozen
+      - run: docker compose up -d --build --wait --wait-timeout 300
+      - run: uv run python scripts/smoke.py
+      - run: docker compose --profile airflow run --rm --no-deps airflow python -c "from airflow.models.dagbag import DagBag; b=DagBag('/opt/airflow/dags'); assert not b.import_errors, b.import_errors; assert 'knowledge_quality' in b.dags; print('Airflow DAG parsed successfully')"
+      - run: docker compose exec -T mongo mongosh --quiet --eval 'if(db.getSiblingDB("opsatlas").audit.countDocuments({}) === 0) quit(1)'
+      - run: docker compose logs --no-color
+        if: failure()
+      - run: docker compose down
+        if: always()
+  kubernetes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {version: '0.12.5', python-version: '3.12'}
+      - run: uv sync --frozen
+      - run: docker build -t opsatlas-api:local . && docker build -t opsatlas-web:local web
+      - name: Create isolated kind cluster
+        run: |
+          curl -fsSL -o kind https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64
+          chmod +x kind
+          ./kind create cluster --name opsatlas --wait 120s
+          ./kind load docker-image opsatlas-api:local opsatlas-web:local --name opsatlas
+      - run: |
+          kubectl apply -k infra/k8s
+          kubectl -n opsatlas rollout status deployment/api --timeout=300s
+          kubectl -n opsatlas rollout status deployment/worker --timeout=300s
+          kubectl -n opsatlas rollout status deployment/web --timeout=300s
+          kubectl -n opsatlas port-forward service/api 8000:8000 > /tmp/port-forward.log 2>&1 &
+          sleep 3
+          uv run python scripts/smoke.py
+      - name: Diagnostics
+        if: failure()
+        run: |
+          kubectl -n opsatlas get pods
+          kubectl -n opsatlas describe pods
+          kubectl -n opsatlas logs deployment/api --all-containers=true --tail=100
+          kubectl -n opsatlas logs deployment/worker --all-containers=true --tail=100

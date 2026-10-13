@@ -1,0 +1,6 @@
+apiVersion: 1
+providers:
+  - name: OpsAtlas
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

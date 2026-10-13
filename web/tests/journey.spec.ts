@@ -1,0 +1,31 @@
+import { test, expect } from '@playwright/test';
+test('recruiter journey: ingest, ask, inspect sources, abstain and evaluate', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Load sample runbooks' }).click();
+  await expect(page.getByText('Kafka consumer lag', { exact: true }).first()).toBeVisible();
+  await page.getByLabel('Question', { exact: true }).fill('Kafka consumer lag partition count');
+  await page.getByRole('button', { name: 'Find evidence' }).click();
+  await expect(page.getByRole('heading', { name: 'Evidence-backed answer' })).toBeVisible();
+  await page.locator('summary').click();
+  await expect(page.locator('.citation').getByText('runbooks/kafka-consumer-lag', { exact: true })).toBeVisible();
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.screenshot({ path: '../docs/screenshots/knowledge-desk.png', fullPage: true });
+  await page.getByLabel('Question', { exact: true }).fill('Who won the intergalactic chess championship?');
+  await page.getByRole('button', { name: 'Find evidence' }).click();
+  await expect(page.getByRole('heading', { name: 'More evidence needed' })).toBeVisible();
+  await page.getByRole('button', { name: 'Quality checks' }).click();
+  await page.getByRole('button', { name: 'Run evaluation' }).click();
+  await expect(page.getByText('4 / 4 checks passed')).toBeVisible();
+});
+test('mobile library upload is usable', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Runbook library' }).click();
+  await page.getByLabel('Source ID').fill('runbooks/mobile-smoke');
+  await page.getByLabel('Title', { exact: true }).fill('Mobile smoke runbook');
+  await page.getByLabel('Runbook content').fill('For a mobile smoke check, verify responsiveness and readable source citations.');
+  await page.getByRole('button', { name: 'Index runbook' }).click();
+  await expect(page.getByRole('heading', { name: 'Mobile smoke runbook' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '../docs/screenshots/mobile-library.png', fullPage: true });
+});

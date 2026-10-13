@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: opsatlas
+resources:
+  - namespace.yaml
+  - data.yaml
+  - application.yaml
+configMapGenerator:
+  - name: app-config
+    literals:
+      - OPSATLAS_INGESTION_MODE=kafka
+      - OPSATLAS_KAFKA_BOOTSTRAP=kafka:9092
+      - OPSATLAS_MONGO_URL=mongodb://mongo:27017
+      - OPSATLAS_LLM_MODE=extractive
+      - OPSATLAS_OTLP_ENDPOINT=
+      - OPSATLAS_DATABASE_URL=postgresql+psycopg://opsatlas:local-demo-password@postgres/opsatlas

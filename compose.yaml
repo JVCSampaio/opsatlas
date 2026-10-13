@@ -1,0 +1,112 @@
+name: opsatlas
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: opsatlas
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-demo-password}
+      POSTGRES_DB: opsatlas
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U opsatlas]
+      interval: 5s
+      retries: 20
+    volumes: [postgres-data:/var/lib/postgresql/data]
+  kafka:
+    image: apache/kafka:3.9.1
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+    volumes: [kafka-data:/tmp/kraft-combined-logs]
+    healthcheck:
+      test: [CMD-SHELL, /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+  mongo:
+    image: mongo:8.0
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]
+      interval: 10s
+      retries: 20
+  api:
+    build: .
+    image: opsatlas-api:local
+    environment: &app-env
+      OPSATLAS_DATABASE_URL: postgresql+psycopg://opsatlas:${POSTGRES_PASSWORD:-local-demo-password}@postgres/opsatlas
+      OPSATLAS_INGESTION_MODE: kafka
+      OPSATLAS_KAFKA_BOOTSTRAP: kafka:9092
+      OPSATLAS_MONGO_URL: mongodb://mongo:27017
+      OPSATLAS_API_KEY: ${OPSATLAS_API_KEY:-}
+      OPSATLAS_LLM_MODE: ${OPSATLAS_LLM_MODE:-extractive}
+      OPSATLAS_LLM_BASE_URL: ${OPSATLAS_LLM_BASE_URL:-http://host.docker.internal:8081/v1}
+      OPSATLAS_LLM_MODEL: ${OPSATLAS_LLM_MODEL:-local-model}
+      OPSATLAS_LLM_API_KEY: ${OPSATLAS_LLM_API_KEY:-}
+      OPSATLAS_EMBEDDING_MODEL: ${OPSATLAS_EMBEDDING_MODEL:-}
+      OPSATLAS_OTLP_ENDPOINT: http://tempo:4318/v1/traces
+    depends_on:
+      postgres: {condition: service_healthy}
+    ports: [127.0.0.1:8000:8000]
+    healthcheck:
+      test: [CMD, /app/.venv/bin/python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      interval: 10s
+      retries: 20
+  worker:
+    image: opsatlas-api:local
+    restart: on-failure
+    command: [/app/.venv/bin/python, -m, opsatlas.worker]
+    environment: *app-env
+    depends_on:
+      api: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+      mongo: {condition: service_healthy}
+  web:
+    build: ./web
+    image: opsatlas-web:local
+    ports: [127.0.0.1:4200:80]
+    depends_on:
+      api: {condition: service_healthy}
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    volumes: [./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro]
+    ports: [127.0.0.1:9090:9090]
+  tempo:
+    image: grafana/tempo:2.7.2
+    command: [-config.file=/etc/tempo.yaml]
+    volumes: [./infra/observability/tempo.yaml:/etc/tempo.yaml:ro]
+  grafana:
+    image: grafana/grafana:11.6.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-local-observability}
+    volumes:
+      - ./infra/observability/grafana:/etc/grafana/provisioning:ro
+      - ./infra/observability/dashboard.json:/var/lib/grafana/dashboards/opsatlas.json:ro
+    ports: [127.0.0.1:3000:3000]
+    depends_on: [prometheus, tempo]
+  airflow:
+    image: apache/airflow:3.2.2
+    profiles: [airflow]
+    command: standalone
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      OPSATLAS_API_URL: http://api:8000
+      OPSATLAS_API_KEY: ${OPSATLAS_API_KEY:-}
+    volumes: [./infra/airflow/dags:/opt/airflow/dags:ro, airflow-data:/opt/airflow]
+    ports: [127.0.0.1:8080:8080]
+    depends_on:
+      worker: {condition: service_started}
+volumes:
+  postgres-data:
+  kafka-data:
+  mongo-data:
+  airflow-data:
