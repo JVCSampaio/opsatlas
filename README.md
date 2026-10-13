@@ -99,7 +99,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The browser tests drive the real API: upload, question, source inspection, abstention, evaluation and mobile layout. CI also builds and exercises the real event-driven stack. [Validation evidence](docs/VALIDATION.md) distinguishes observed results from deployment files awaiting execution.
+The browser tests drive the real API: upload, question, source inspection, abstention, evaluation and mobile layout. **Verified:** 23 Python tests, two browser journeys, real Kafka/PostgreSQL/MongoDB integration, an executed Airflow DAG and a working kind Kubernetes deployment. [Validation evidence](docs/VALIDATION.md) links the successful CI jobs and explains their scope.
 
 ## Engineering choices and boundaries
 
