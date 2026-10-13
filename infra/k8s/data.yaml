@@ -92,10 +92,10 @@ spec:
             - {name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR, value: '1'}
             - {name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR, value: '1'}
             - {name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR, value: '1'}
-            - {name: KAFKA_LOG_DIRS, value: /tmp/kraft-combined-logs}
+            - {name: KAFKA_LOG_DIRS, value: /var/lib/kafka/data}
           resources: {requests: {cpu: 250m, memory: 512Mi}, limits: {cpu: '2', memory: 1Gi}}
           readinessProbe: {tcpSocket: {port: 9092}, initialDelaySeconds: 20}
-          volumeMounts: [{name: data, mountPath: /tmp/kraft-combined-logs}]
+          volumeMounts: [{name: data, mountPath: /var/lib/kafka/data}]
   volumeClaimTemplates:
     - metadata: {name: data}
       spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: 1Gi}}}
