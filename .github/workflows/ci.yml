@@ -63,6 +63,7 @@ jobs:
           ./kind load docker-image opsatlas-api:local opsatlas-web:local --name opsatlas
       - run: |
           kubectl apply -k infra/k8s
+          kubectl -n opsatlas rollout status statefulset/kafka --timeout=300s
           kubectl -n opsatlas rollout status deployment/api --timeout=300s
           kubectl -n opsatlas rollout status deployment/worker --timeout=300s
           kubectl -n opsatlas rollout status deployment/web --timeout=300s
@@ -76,3 +77,4 @@ jobs:
           kubectl -n opsatlas describe pods
           kubectl -n opsatlas logs deployment/api --all-containers=true --tail=100
           kubectl -n opsatlas logs deployment/worker --all-containers=true --tail=100
+          kubectl -n opsatlas logs statefulset/kafka --all-containers=true --tail=100

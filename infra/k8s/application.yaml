@@ -14,6 +14,10 @@ spec:
   template:
     metadata: {labels: {app: api}}
     spec:
+      initContainers:
+        - name: wait-postgres
+          image: postgres:17-alpine
+          command: [sh, -c, 'until pg_isready -h postgres -U opsatlas; do sleep 3; done']
       containers:
         - name: api
           image: opsatlas-api:local
