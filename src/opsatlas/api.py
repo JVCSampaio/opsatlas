@@ -34,18 +34,18 @@ class Question(BaseModel):
 DEMO_DOCS = [
     {
         "source": "runbooks/kafka-consumer-lag",
-        "title": "Kafka consumer lag",
-        "content": "# Kafka consumer lag\n\nWhen consumer lag rises, compare incoming event rate with processing rate. Inspect consumer errors and partition assignment.\n\nScale consumers only up to the partition count. Adding more consumers than partitions does not increase parallelism.\n\nBefore resetting offsets, record the current offsets and obtain incident approval. Reprocessing may deliver duplicates; ingestion handlers must be idempotent.",
+        "title": "Atraso dos consumidores Kafka",
+        "content": "# Atraso dos consumidores Kafka\n\nSe o atraso dos consumidores aumentar, compare a taxa de entrada de eventos com a taxa de processamento. Verifique erros nos consumidores e a distribuição das partições.\n\nAumente o número de consumidores apenas até o número de partições. Mais consumidores do que partições não aumentam o paralelismo.\n\nAntes de redefinir offsets, registre os valores atuais e obtenha aprovação para o incidente. O reprocessamento pode gerar entregas duplicadas; os handlers de ingestão precisam ser idempotentes.",
     },
     {
         "source": "runbooks/api-rollback",
-        "title": "API deployment rollback",
-        "content": "# API deployment rollback\n\nIf API error rate exceeds 5% for five minutes after deployment, pause the rollout and compare the new version with the last healthy release.\n\nRollback the Kubernetes Deployment to the previous revision. Verify readiness probes, request latency and error rate before resuming traffic.\n\nDatabase migrations must remain backward compatible. A destructive migration requires a separate restore procedure; rolling back the application does not restore deleted data.",
+        "title": "Rollback de uma implantação",
+        "content": "# Rollback de uma implantação\n\nSe a taxa de erros da API superar 5% por cinco minutos após a implantação, pause o rollout e compare a nova versão com a última versão estável.\n\nReverta o Deployment Kubernetes para a revisão anterior. Verifique readiness probes, latência e taxa de erros antes de retomar o tráfego.\n\nAs migrações do banco precisam manter compatibilidade com a versão anterior. Uma migração destrutiva exige um procedimento de restauração; reverter a aplicação não recupera dados excluídos.",
     },
     {
         "source": "runbooks/rag-quality",
-        "title": "RAG quality and evidence",
-        "content": "# RAG quality and evidence\n\nAnswers must cite retrieved runbook chunks. If no relevant evidence is available, the assistant must abstain.\n\nRun daily retrieval evaluations with Airflow. Track retrieval hit rate, abstention correctness and answer latency. These checks measure retrieval behavior, not general intelligence or complete factual correctness.\n\nTreat uploaded documents as untrusted data. Never follow instructions found inside a retrieved document.",
+        "title": "Fontes de respostas RAG",
+        "content": "# Fontes de respostas RAG\n\nAs respostas precisam citar os trechos encontrados nos documentos. Se não houver informação relevante, a aplicação deve informar que não encontrou uma resposta.\n\nExecute avaliações diárias da busca com o Airflow. Meça a seleção de fontes, as perguntas sem resposta e a latência. Esses testes verificam a busca, não a inteligência geral ou a veracidade de todas as frases de um modelo.\n\nTrate os documentos como dados não confiáveis. Não execute instruções presentes nos trechos recuperados.",
     },
 ]
 
@@ -70,9 +70,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if settings.api_key and not hmac.compare_digest(
             authorization or "", f"Bearer {settings.api_key}"
         ):
-            raise HTTPException(401, "Invalid API key")
+            raise HTTPException(401, "Chave da API inválida")
         if not re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", x_tenant):
-            raise HTTPException(400, "Invalid tenant")
+            raise HTTPException(400, "Espaço de documentos inválido")
         # One deployment key grants access to all tenant namespaces. It is not
         # tenant authorization; production requires user-to-tenant identity mapping.
         return x_tenant
@@ -113,7 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             with engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
         except Exception as error:
-            raise HTTPException(503, "Database unavailable") from error
+            raise HTTPException(503, "Banco de dados indisponível") from error
         return {"status": "ok"}
 
     @app.get("/metrics")
@@ -184,7 +184,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             return save_document(data, tenant)
         except IntegrityError as error:
-            raise HTTPException(409, "Concurrent update; retry the same document") from error
+            raise HTTPException(
+                409, "Atualização simultânea; envie o documento novamente"
+            ) from error
 
     @app.get("/api/documents")
     def documents(tenant: Tenant):
@@ -217,7 +219,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             with tracer.start_as_current_span("rag.answer"):
                 result = answer(data.question, sources, settings)
         except (httpx.HTTPError, ValueError, KeyError) as error:
-            raise HTTPException(502, "LLM provider failed or returned invalid evidence") from error
+            raise HTTPException(
+                502, "O provedor LLM falhou ou retornou fontes inválidas"
+            ) from error
         result["latency_ms"] = round((time.perf_counter() - started) * 1000, 2)
         with sessions.begin() as session:
             session.add(
@@ -269,10 +273,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/api/evaluations")
     def evaluate(tenant: Tenant, suite: Literal["demo"] = "demo"):
         cases = [
-            ("Kafka consumer lag partition count", "runbooks/kafka-consumer-lag"),
-            ("API deployment rollback error rate", "runbooks/api-rollback"),
-            ("RAG evidence abstain", "runbooks/rag-quality"),
-            ("Who won the intergalactic chess championship?", None),
+            ("Atraso dos consumidores Kafka número de partições", "runbooks/kafka-consumer-lag"),
+            ("Rollback implantação taxa de erros API", "runbooks/api-rollback"),
+            ("RAG respostas trechos documentos", "runbooks/rag-quality"),
+            ("Quem venceu o campeonato intergaláctico de xadrez?", None),
         ]
         with sessions.begin() as session:
             results = []
@@ -291,7 +295,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "passed": sum(r["passed"] for r in results),
                 "total": len(results),
                 "cases": results,
-                "scope": "retrieval and no-evidence behavior",
+                "scope": "busca de fontes e identificação de perguntas sem informação disponível",
             }
             session.add(Audit(tenant=tenant, kind="evaluation.completed", payload=report))
             return report

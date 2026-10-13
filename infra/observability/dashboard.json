@@ -1,6 +1,6 @@
-{"title":"OpsAtlas · Runtime","uid":"opsatlas","schemaVersion":40,"version":1,"refresh":"10s","time":{"from":"now-30m","to":"now"},"panels":[
-{"id":1,"title":"Requests / second","type":"timeseries","datasource":{"uid":"prometheus"},"gridPos":{"x":0,"y":0,"w":12,"h":8},"targets":[{"expr":"sum by (route) (rate(opsatlas_requests_total[5m]))","legendFormat":"{{route}}"}]},
-{"id":2,"title":"P95 API latency (s)","type":"timeseries","datasource":{"uid":"prometheus"},"gridPos":{"x":12,"y":0,"w":12,"h":8},"targets":[{"expr":"histogram_quantile(0.95, sum by (le, route) (rate(opsatlas_request_seconds_bucket[5m])))","legendFormat":"{{route}}"}]},
-{"id":3,"title":"Answers by outcome","type":"timeseries","datasource":{"uid":"prometheus"},"gridPos":{"x":0,"y":8,"w":12,"h":8},"targets":[{"expr":"sum by (mode, abstained) (opsatlas_answers_total)","legendFormat":"{{mode}} abstained={{abstained}}"}]},
-{"id":4,"title":"Provider reported tokens","type":"timeseries","datasource":{"uid":"prometheus"},"gridPos":{"x":12,"y":8,"w":12,"h":8},"targets":[{"expr":"sum by (kind) (opsatlas_llm_tokens_total)","legendFormat":"{{kind}}"}]}
+{"title":"OpsAtlas · Métricas da API","uid":"opsatlas","schemaVersion":40,"version":1,"refresh":"10s","time":{"from":"now-30m","to":"now"},"panels":[
+{"id":1,"title":"Requisições por segundo","type":"timeseries","datasource":{"uid":"prometheus"},"gridPos":{"x":0,"y":0,"w":12,"h":8},"targets":[{"expr":"sum by (route) (rate(opsatlas_requests_total[5m]))","legendFormat":"{{route}}"}]},
+{"id":2,"title":"Latência P95 da API (s)","type":"timeseries","datasource":{"uid":"prometheus"},"gridPos":{"x":12,"y":0,"w":12,"h":8},"targets":[{"expr":"histogram_quantile(0.95, sum by (le, route) (rate(opsatlas_request_seconds_bucket[5m])))","legendFormat":"{{route}}"}]},
+{"id":3,"title":"Respostas por resultado","type":"timeseries","datasource":{"uid":"prometheus"},"gridPos":{"x":0,"y":8,"w":12,"h":8},"targets":[{"expr":"sum by (mode, abstained) (opsatlas_answers_total)","legendFormat":"{{mode}} abstained={{abstained}}"}]},
+{"id":4,"title":"Tokens informados pelo provedor","type":"timeseries","datasource":{"uid":"prometheus"},"gridPos":{"x":12,"y":8,"w":12,"h":8},"targets":[{"expr":"sum by (kind) (opsatlas_llm_tokens_total)","legendFormat":"{{kind}}"}]}
 ]}

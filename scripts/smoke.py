@@ -21,7 +21,9 @@ def run(base_url, key=""):
             time.sleep(2)
         else:
             raise RuntimeError("Documents did not become ready")
-        result = client.post("/api/ask", json={"question": "Kafka consumer lag partition count"})
+        result = client.post(
+            "/api/ask", json={"question": "Atraso dos consumidores Kafka número de partições"}
+        )
         result.raise_for_status()
         payload = result.json()
         assert payload["citations"][0]["source"] == "runbooks/kafka-consumer-lag"

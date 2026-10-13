@@ -42,79 +42,81 @@ interface Evaluation {
 @Component({
   selector: "app-root",
   standalone: true,
-  template: ` <div class="shell">
+  template: `<div class="shell">
     <aside>
-      <a class="brand" href="/" aria-label="OpsAtlas home"
+      <a class="brand" href="/" aria-label="Início do OpsAtlas"
         ><span class="brand-icon">◈</span> OpsAtlas</a
       >
-      <div class="workspace">WORKSPACE <span>01</span></div>
+      <div class="workspace">DOCUMENTOS <span>01</span></div>
       <button
         class="nav"
         [class.active]="tab() === 'ask'"
         (click)="tab.set('ask')"
       >
-        <span>⌘</span> Knowledge desk
+        <span>⌘</span> Consulta
       </button>
       <button
         class="nav"
         [class.active]="tab() === 'library'"
         (click)="tab.set('library')"
       >
-        <span>▤</span> Runbook library <small>{{ docs().length }}</small>
+        <span>▤</span> Documentos <small>{{ docs().length }}</small>
       </button>
       <button
         class="nav"
         [class.active]="tab() === 'quality'"
         (click)="tab.set('quality')"
       >
-        <span>◎</span> Quality checks
+        <span>◎</span> Avaliação
       </button>
       <div class="sidebar-bottom">
-        <span class="dot"></span> Evidence before action
-        <p>Built by John Sampaio<br />Python · Angular · RAG</p>
+        <p>John Sampaio<br />Python · Angular · RAG</p>
         <a
           href="https://github.com/JVCSampaio/opsatlas"
           target="_blank"
           rel="noopener"
-          >Source code ↗</a
+          >Código no GitHub ↗</a
         >
       </div>
     </aside>
     <main>
       <header>
         <span
-          >OPERATIONS /
+          >OPSATLAS /
           {{
             tab() === "ask"
-              ? "KNOWLEDGE DESK"
+              ? "CONSULTA"
               : tab() === "library"
-                ? "LIBRARY"
-                : "QUALITY"
+                ? "DOCUMENTOS"
+                : "AVALIAÇÃO"
           }}</span
         >
         <div>
           <span class="status"
             ><i class="dot"></i
-            >{{ overview() ? "API connected" : "Connecting" }}</span
-          ><button class="subtle" (click)="showSettings.set(!showSettings())">
-            Connection ⚙
+            >{{ overview() ? "API conectada" : "Conectando" }}</span
+          >
+          <button class="subtle" (click)="showSettings.set(!showSettings())">
+            Conexão ⚙
           </button>
         </div>
       </header>
       @if (showSettings()) {
         <section class="settings">
           <label
-            >Deployment API key<input
+            >Chave da API<input
               type="password"
               [value]="apiKey"
               (input)="apiKey = value($event)"
-              placeholder="Empty for local demo" /></label
-          ><label
-            >Tenant<input
+              placeholder="Opcional na demonstração local"
+          /></label>
+          <label
+            >Espaço de documentos (tenant)<input
               [value]="tenant"
-              (input)="tenant = value($event)" /></label
-          ><button (click)="refresh(); showSettings.set(false)">Connect</button>
-          <p>The key stays in memory and is never saved in the browser.</p>
+              (input)="tenant = value($event)"
+          /></label>
+          <button (click)="refresh(); showSettings.set(false)">Conectar</button>
+          <p>A chave não é salva no navegador.</p>
         </section>
       }
       @if (error()) {
@@ -122,75 +124,66 @@ interface Evaluation {
       }
       <div class="page-heading">
         <div>
-          <div class="eyebrow">YOUR OPERATIONS, WITH CONTEXT</div>
           <h1>
             {{
               tab() === "ask"
-                ? "Find the answer.
-Know the source."
+                ? "Consultar documentos"
                 : tab() === "library"
-                  ? "A shared operating memory."
-                  : "Trust is measurable."
+                  ? "Cadastrar documentos"
+                  : "Avaliar a busca"
             }}
           </h1>
           <p>
             {{
               tab() === "ask"
-                ? "Turn runbooks into grounded answers you can inspect."
+                ? "Faça uma pergunta sobre os procedimentos cadastrados e consulte os trechos usados na resposta."
                 : tab() === "library"
-                  ? "Versioned documents, searchable evidence and a visible ingestion state."
-                  : "Check retrieval and abstention before trusting the next answer."
+                  ? "Adicione procedimentos em texto ou Markdown. Reutilize o identificador para atualizar um documento."
+                  : "Verifique se a busca encontra os documentos esperados e identifica perguntas sem informação disponível."
             }}
           </p>
         </div>
         <button class="seed" [disabled]="busy()" (click)="seed()">
-          Load sample runbooks <span>↗</span>
+          Carregar exemplos <span>↗</span>
         </button>
       </div>
-      <section class="stats" aria-label="Workspace statistics">
+      <section class="stats" aria-label="Resumo dos documentos">
         <div>
-          <span>INDEXED DOCUMENTS</span
+          <span>DOCUMENTOS</span
           ><strong>{{ overview()?.documents ?? "—" }}</strong
-          ><small>Versioned source library</small>
+          ><small>Procedimentos cadastrados</small>
         </div>
         <div>
-          <span>RETRIEVABLE CHUNKS</span
+          <span>TRECHOS INDEXADOS</span
           ><strong>{{ overview()?.chunks ?? "—" }}</strong
-          ><small>Scoped to {{ tenant }}</small>
+          ><small>Espaço: {{ tenant }}</small>
         </div>
         <div>
-          <span>AUDIT EVENTS</span
-          ><strong>{{ overview()?.events ?? "—" }}</strong
-          ><small>Persistent evidence trail</small>
+          <span>EVENTOS</span><strong>{{ overview()?.events ?? "—" }}</strong
+          ><small>Registros de auditoria</small>
         </div>
         <div>
-          <span>ANSWER ENGINE</span
+          <span>MODO DE RESPOSTA</span
           ><strong class="engine">{{
-            overview()?.llm_mode === "llm" ? "LLM" : "Extractive"
+            overview()?.llm_mode === "llm" ? "LLM" : "Extrativo"
           }}</strong
           ><small>{{
             overview()?.llm_mode === "llm"
-              ? "OpenAI-compatible provider"
-              : "Offline demo · no model required"
+              ? "Modelo configurado na API"
+              : "Exibe um trecho do documento, sem LLM"
           }}</small>
         </div>
       </section>
       @if (tab() === "ask") {
         <div class="desk">
           <section class="question-panel">
-            <div class="panel-heading">
-              <h2>Ask your runbooks</h2>
-              <span>01 / RETRIEVE</span>
-            </div>
-            <p class="muted">
-              A precise question makes evidence easier to find.
-            </p>
-            <label class="sr-only" for="question">Question</label
-            ><textarea
+            <div class="panel-heading"><h2>Pergunta</h2></div>
+            <label class="sr-only" for="question">Pergunta</label>
+            <textarea
               id="question"
               [value]="question"
               (input)="question = value($event)"
-              placeholder="How should I handle Kafka consumer lag?"
+              placeholder="Como reduzir o atraso dos consumidores Kafka?"
             ></textarea>
             <div class="suggestions">
               @for (prompt of prompts; track prompt) {
@@ -198,13 +191,13 @@ Know the source."
               }
             </div>
             <div class="question-footer">
-              <span>⌁ Answers stay within your sources</span
+              <span>A busca usa os documentos deste espaço.</span
               ><button
                 class="primary"
                 [disabled]="busy() || question.trim().length < 3"
                 (click)="ask()"
               >
-                {{ busy() ? "Searching…" : "Find evidence" }} <span>→</span>
+                {{ busy() ? "Buscando..." : "Buscar resposta" }} <span>→</span>
               </button>
             </div>
             @if (result(); as r) {
@@ -212,22 +205,20 @@ Know the source."
                 <div class="panel-heading">
                   <h2>
                     {{
-                      r.abstained
-                        ? "More evidence needed"
-                        : "Evidence-backed answer"
+                      r.abstained ? "Sem informação nos documentos" : "Resposta"
                     }}
                   </h2>
                   <span>{{ r.latency_ms }} ms</span>
                 </div>
                 <p class="answer-text">{{ r.answer }}</p>
                 <div class="answer-meta">
-                  {{ r.mode }} · {{ r.citations.length }} source(s) ·
-                  {{ r.usage.completion_tokens ?? 0 }} generated tokens
+                  {{ modeLabel(r.mode) }} · {{ r.citations.length }} fonte(s) ·
+                  {{ r.usage.completion_tokens ?? 0 }} tokens gerados
                 </div>
                 @for (s of r.citations; track s.id) {
                   <details class="citation">
                     <summary>
-                      {{ s.title }} <span>revision {{ s.revision }} ↗</span>
+                      {{ s.title }} <span>revisão {{ s.revision }} ↗</span>
                     </summary>
                     <small>{{ s.source }}</small>
                     <p>{{ s.text }}</p>
@@ -236,20 +227,19 @@ Know the source."
               </article>
             } @else {
               <div class="empty-answer">
-                <span>◈</span>
-                <h3>Every answer starts with evidence.</h3>
+                <h3>Nenhuma consulta realizada</h3>
                 <p>
-                  Load the sample library, then ask a question.<br />Source
-                  excerpts will appear alongside your answer.
+                  Carregue os exemplos ou cadastre um documento.<br />Depois,
+                  digite uma pergunta e clique em Buscar resposta.
                 </p>
               </div>
             }
           </section>
           <section class="right-column">
             <div class="panel-heading">
-              <h2>In the library</h2>
+              <h2>Documentos cadastrados</h2>
               <button class="text-button" (click)="tab.set('library')">
-                View all ↗
+                Ver todos ↗
               </button>
             </div>
             @for (d of docs(); track d.id) {
@@ -257,32 +247,33 @@ Know the source."
                 <span class="doc-icon">▤</span>
                 <div>
                   <h3>{{ d.title }}</h3>
-                  <small>{{ d.status }} · revision {{ d.revision }}</small>
+                  <small
+                    >{{ statusLabel(d.status) }} · revisão
+                    {{ d.revision }}</small
+                  >
                 </div>
               </div>
             }
             @if (!docs().length) {
-              <p class="muted">
-                No documents yet. Add a runbook or load the samples.
-              </p>
+              <p class="muted">Nenhum documento cadastrado.</p>
             }
             <div class="principle">
-              <span>DESIGNED FOR ACCOUNTABILITY</span>
-              <h3>Useful answers.<br />Visible boundaries.</h3>
+              <h3>Como funciona</h3>
               <p>
-                No matching evidence? The assistant abstains. Every returned
-                source carries its document revision.
+                A aplicação busca trechos relacionados à pergunta e mostra as
+                fontes. No modo extrativo, a resposta é um trecho do documento.
+                Com LLM configurado, o modelo recebe esses trechos para
+                responder.
               </p>
-              <div>SQL outbox → Kafka → Indexer</div>
             </div>
             <div class="activity">
-              <h2>Recent activity</h2>
+              <h2>Atividade recente</h2>
               @for (
                 a of overview()?.activity?.slice(0, 5) ?? [];
                 track $index
               ) {
                 <p>
-                  <i class="dot"></i>{{ a.kind
+                  <i class="dot"></i>{{ activityLabel(a.kind)
                   }}<small>{{ a.created_at.slice(11, 19) }}</small>
                 </p>
               }
@@ -293,48 +284,45 @@ Know the source."
       @if (tab() === "library") {
         <section class="library-grid">
           <div class="card">
-            <h2>Add or update a runbook</h2>
-            <p class="muted">
-              Reuse the same source to create a new revision. Markdown and plain
-              text are supported.
-            </p>
+            <h2>Adicionar ou atualizar documento</h2>
             <label
-              >Source ID<input
+              >Identificador<input
                 [value]="source"
                 (input)="source = value($event)"
-                placeholder="runbooks/payment-timeout" /></label
-            ><label
-              >Title<input
-                [value]="title"
-                (input)="title = value($event)" /></label
-            ><label
-              >Runbook content<textarea
+                placeholder="procedimentos/timeout-pagamento"
+            /></label>
+            <label
+              >Título<input [value]="title" (input)="title = value($event)"
+            /></label>
+            <label
+              >Conteúdo<textarea
                 [value]="content"
                 (input)="content = value($event)"
                 rows="9"
-              ></textarea></label
-            ><button
+              ></textarea>
+            </label>
+            <button
               class="primary"
               [disabled]="busy() || !source || !title || !content"
               (click)="upload()"
             >
-              Index runbook →
+              Salvar documento →
             </button>
           </div>
           <div class="card">
-            <h2>Document inventory</h2>
+            <h2>Documentos cadastrados</h2>
             @for (d of docs(); track d.id) {
               <div class="inventory-row">
                 <h3>{{ d.title }}</h3>
                 <code>{{ d.source }}</code>
                 <p>
-                  <span class="badge">{{ d.status }}</span> revision
+                  <span class="badge">{{ statusLabel(d.status) }}</span> revisão
                   {{ d.revision }}
                 </p>
               </div>
             }
             @if (!docs().length) {
-              <p>No documents yet.</p>
+              <p>Nenhum documento cadastrado.</p>
             }
           </div>
         </section>
@@ -342,37 +330,38 @@ Know the source."
       @if (tab() === "quality") {
         <section class="card quality">
           <div class="panel-heading">
-            <h2>Retrieval smoke suite</h2>
+            <h2>Testes com os exemplos</h2>
             <button class="primary" [disabled]="busy()" (click)="evaluate()">
-              Run evaluation →
+              Executar avaliação →
             </button>
           </div>
           <p>
-            Three source-selection checks and one no-evidence check against the
-            sample runbooks. This is a transparent demo suite, not an unseen
-            model benchmark.
+            A avaliação contém três perguntas com documento esperado e uma sem
+            resposta nos exemplos. Ela verifica a busca, não a qualidade geral
+            de um LLM.
           </p>
           @if (evaluation(); as e) {
             <h3 class="evaluation-score">
-              {{ e.passed }} / {{ e.total }} checks passed
+              {{ e.passed }} / {{ e.total }} testes passaram
             </h3>
             @for (c of e.cases; track c.question) {
               <div class="check">
                 <span>{{ c.passed ? "✓" : "×" }}</span
                 >{{ c.question
-                }}<strong>{{ c.passed ? "PASS" : "FAIL" }}</strong>
+                }}<strong>{{ c.passed ? "PASSOU" : "FALHOU" }}</strong>
               </div>
             }
           }
           <div class="quality-note">
-            Daily runs are orchestrated by the Airflow DAG. Prometheus records
-            API latency, abstentions and provider-reported token usage.
+            Na configuração completa, o Airflow executa esta avaliação
+            diariamente. As métricas da API ficam disponíveis no Prometheus e no
+            Grafana.
           </div>
         </section>
       }
       <footer>
-        <span>OpsAtlas / Operational knowledge platform</span
-        ><span>Sources you can inspect. Decisions you can explain.</span>
+        <span>OpsAtlas · Consulta de procedimentos técnicos</span
+        ><span>Projeto de portfólio de John Sampaio</span>
       </footer>
     </main>
   </div>`,
@@ -394,10 +383,31 @@ class App implements OnInit, OnDestroy {
   title = "";
   content = "";
   prompts = [
-    "Kafka consumer lag",
-    "API deployment rollback",
-    "RAG evidence and abstention",
+    "Atraso dos consumidores Kafka",
+    "Rollback de uma implantação",
+    "Fontes de respostas RAG",
   ];
+  modeLabel(mode: string): string {
+    return mode === "extractive" ? "Extrativo" : "LLM";
+  }
+  statusLabel(status: string): string {
+    return (
+      ({ ready: "Indexado", queued: "Na fila" } as Record<string, string>)[
+        status
+      ] ?? status
+    );
+  }
+  activityLabel(kind: string): string {
+    return (
+      (
+        {
+          "document.submitted": "Documento salvo",
+          "answer.created": "Consulta realizada",
+          "evaluation.completed": "Avaliação executada",
+        } as Record<string, string>
+      )[kind] ?? kind
+    );
+  }
   value(event: Event): string {
     return (event.target as HTMLInputElement).value;
   }
@@ -428,7 +438,7 @@ class App implements OnInit, OnDestroy {
       throw new Error(
         typeof data.detail === "string"
           ? data.detail
-          : "Request failed (" + response.status + ")",
+          : "Falha na requisição (" + response.status + ")",
       );
     }
     return response.json() as Promise<T>;
@@ -443,7 +453,7 @@ class App implements OnInit, OnDestroy {
       this.overview.set(overview);
       this.error.set("");
     } catch (e) {
-      this.error.set(String(e));
+      this.error.set(e instanceof Error ? e.message : String(e));
     }
   }
   async action(work: () => Promise<void>): Promise<void> {
@@ -453,7 +463,7 @@ class App implements OnInit, OnDestroy {
       await work();
       await this.refresh();
     } catch (e) {
-      this.error.set(String(e));
+      this.error.set(e instanceof Error ? e.message : String(e));
     } finally {
       this.busy.set(false);
     }

@@ -1,19 +1,17 @@
 import { test, expect } from "@playwright/test";
-test("recruiter journey: ingest, ask, inspect sources, abstain and evaluate", async ({
+test("consulta, fontes, pergunta sem resposta e avaliação", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Load sample runbooks" }).click();
+  await page.getByRole("button", { name: "Carregar exemplos" }).click();
   await expect(
-    page.getByText("Kafka consumer lag", { exact: true }).first(),
+    page.getByText("Atraso dos consumidores Kafka", { exact: true }).first(),
   ).toBeVisible();
   await page
-    .getByLabel("Question", { exact: true })
-    .fill("Kafka consumer lag partition count");
-  await page.getByRole("button", { name: "Find evidence" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Evidence-backed answer" }),
-  ).toBeVisible();
+    .getByLabel("Pergunta", { exact: true })
+    .fill("Atraso dos consumidores Kafka número de partições");
+  await page.getByRole("button", { name: "Buscar resposta" }).click();
+  await expect(page.getByRole("heading", { name: "Resposta" })).toBeVisible();
   await page.locator("summary").click();
   await expect(
     page
@@ -26,30 +24,32 @@ test("recruiter journey: ingest, ask, inspect sources, abstain and evaluate", as
     fullPage: true,
   });
   await page
-    .getByLabel("Question", { exact: true })
-    .fill("Who won the intergalactic chess championship?");
-  await page.getByRole("button", { name: "Find evidence" }).click();
+    .getByLabel("Pergunta", { exact: true })
+    .fill("Quem venceu o campeonato intergaláctico de xadrez?");
+  await page.getByRole("button", { name: "Buscar resposta" }).click();
   await expect(
-    page.getByRole("heading", { name: "More evidence needed" }),
+    page.getByRole("heading", { name: "Sem informação nos documentos" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Quality checks" }).click();
-  await page.getByRole("button", { name: "Run evaluation" }).click();
-  await expect(page.getByText("4 / 4 checks passed")).toBeVisible();
+  await page.getByRole("button", { name: "Avaliação" }).click();
+  await page.getByRole("button", { name: "Executar avaliação" }).click();
+  await expect(page.getByText("4 / 4 testes passaram")).toBeVisible();
 });
-test("mobile library upload is usable", async ({ page }) => {
+test("cadastro de documento no celular", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.getByRole("button", { name: "Runbook library" }).click();
-  await page.getByLabel("Source ID").fill("runbooks/mobile-smoke");
-  await page.getByLabel("Title", { exact: true }).fill("Mobile smoke runbook");
+  await page.getByRole("button", { name: "Documentos" }).click();
+  await page.getByLabel("Identificador").fill("runbooks/mobile-smoke");
   await page
-    .getByLabel("Runbook content")
+    .getByLabel("Título", { exact: true })
+    .fill("Procedimento de teste no celular");
+  await page
+    .getByLabel("Conteúdo")
     .fill(
-      "For a mobile smoke check, verify responsiveness and readable source citations.",
+      "No teste em celular, verifique o tamanho da interface e a leitura dos trechos citados.",
     );
-  await page.getByRole("button", { name: "Index runbook" }).click();
+  await page.getByRole("button", { name: "Salvar documento" }).click();
   await expect(
-    page.getByRole("heading", { name: "Mobile smoke runbook" }),
+    page.getByRole("heading", { name: "Procedimento de teste no celular" }),
   ).toBeVisible();
   await expect
     .poll(() =>

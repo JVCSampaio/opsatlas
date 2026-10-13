@@ -1,27 +1,43 @@
-# Architecture decisions
+# Arquitetura
 
-## Runnable without external infrastructure
+## Fluxo de uma consulta
 
-The offline profile uses SQLite, inline indexing and extractive answers. It shares the same API and retrieval implementation as the event profile. This makes the first reviewer journey possible without GPU, keys or containers. Angular 21 is compatible with Node 24; the choice follows the [official compatibility matrix](https://angular.dev/reference/versions).
+1. A interface envia a pergunta para a API.
+2. A API busca trechos nos documentos do tenant informado.
+3. O modo extrativo retorna o trecho mais relevante. No modo LLM, os trechos são enviados ao provedor de chat.
+4. A resposta inclui as fontes e as revisões dos documentos.
+5. A operação é registrada na auditoria.
 
-## Transactional outbox rather than dual writes
+O contexto do modelo é limitado a quatro trechos e 6.000 caracteres. Sem trechos relevantes, a API não chama o modelo.
 
-Saving a document and publishing directly to Kafka leaves a gap if one operation succeeds and the other fails. Instead, the document revision, audit record and pending event commit together in SQL. The worker publishes and waits for acknowledgement before marking an event sent. Delivery remains at least once, not exactly once. Consumer offsets are committed only after indexing commits.
+## Indexação com Kafka
 
-PostgreSQL row locks serialize revision indexing and concurrent updates. Stable chunk IDs and indexed revision guards make duplicate messages harmless. SQLite is intended for the single-process demo; it does not provide PostgreSQL's row-lock concurrency guarantees.
+O documento, a revisão e o evento de indexação são gravados na mesma transação SQL. A tabela de eventos pendentes é a outbox. O worker publica o evento no Kafka e o marca como enviado após a confirmação do broker.
 
-## SQL authority, MongoDB projection
+O consumidor indexa o documento e confirma o offset após o commit SQL. A entrega pode repetir; o consumidor ignora revisões já indexadas ou substituídas. No PostgreSQL, o bloqueio da linha impede indexações simultâneas da mesma revisão.
 
-SQL holds operational truth, including the audit export state. MongoDB stores a queryable audit projection. Export uses UUID-based upserts; a crash between Mongo acknowledgement and SQL commit can safely replay. Raw question and answer bodies are not stored in the audit stream, reducing unnecessary content retention.
+Ao atualizar um documento, seus trechos antigos deixam de aparecer na busca até que a nova revisão seja indexada. O SQLite é usado apenas na demonstração com um processo; ele não tem as mesmas garantias de bloqueio do PostgreSQL.
 
-## Visible model boundaries
+## Auditoria
 
-Sources are selected before inference, bounded to four chunks and 6,000 context characters. Generation must name known retrieved chunk IDs. Missing evidence causes abstention without a model call. The runtime does not assert that a cited answer is factually proven. Retrieval evaluations and model-answer correctness are separate questions.
+O registro original fica no SQL. O worker copia os eventos para o MongoDB usando o UUID do evento como `_id`. Se a cópia repetir, o upsert não cria outro registro.
 
-## Observable workflow
+A auditoria guarda modo de resposta, fontes, latência e contagem de tokens. O texto das perguntas e das respostas não é gravado nela.
 
-API counters expose normalized route labels, avoiding question/tenant identifiers in Prometheus labels. Histograms record request latency; generation usage comes from provider accounting. OpenTelemetry spans cover HTTP requests, retrieval and answering. Grafana provisions Prometheus and Tempo; trace exploration is available through the Tempo datasource. Logs include a generated request ID and never include API keys or corpus text.
+## Busca e respostas
 
-## Deliberate scale boundary
+Sem modelo de embeddings, a aplicação usa contagem de palavras com feature hashing. Isso não é um modelo semântico. Com um provedor de embeddings, usa os vetores retornados pelo modelo. A pontuação combina sobreposição de palavras e similaridade por cosseno.
 
-Ranking currently scans tenant chunks; it is suitable for a small demonstration corpus. SQL schema initialization uses `create_all` for the initial version. A production evolution should introduce reviewed Alembic migrations, server-side BM25/vector search, per-user tenant claims, worker lag monitoring, DLQ handling, and infrastructure managed independently from the application. Single-node Kafka KRaft and Airflow standalone are local demonstration configurations. See [Kafka's Docker examples](https://github.com/apache/kafka/tree/trunk/docker/examples) and [Airflow's Docker documentation](https://airflow.apache.org/docs/apache-airflow/3.2.2/howto/docker-compose/).
+O adapter de chat valida o JSON e os identificadores citados. Uma fonte inexistente causa erro HTTP 502. A existência de uma fonte não comprova que o modelo interpretou corretamente seu conteúdo.
+
+## Observabilidade
+
+O Prometheus recebe contadores de requisições, respostas sem informação e tokens, além de histogramas de latência. O Grafana tem um dashboard com essas métricas. Os traces da API, busca e geração são enviados ao Tempo por OpenTelemetry.
+
+Os logs incluem identificador da requisição, rota, status e duração. Não incluem chaves de API ou conteúdo dos documentos.
+
+## Escopo da infraestrutura
+
+Docker Compose executa a aplicação, bancos, Kafka, observabilidade e, opcionalmente, Airflow. O overlay Kubernetes executa API, interface, worker e os serviços de dados em instâncias únicas para desenvolvimento.
+
+A inicialização do banco usa `create_all`. Para produção, faltam migrações versionadas, autorização por usuário e tenant, limites de requisições, políticas de rede, backups e fila para eventos que falham repetidamente. A busca também precisa de um índice adequado quando a base crescer.

@@ -22,10 +22,12 @@ def test_recruiter_journey(client):
     assert client.get("/health/ready").status_code == 200
     assert client.post("/api/demo/seed").status_code == 200
     assert len(client.get("/api/documents").json()) == 3
-    result = client.post("/api/ask", json={"question": "Kafka consumer lag partition count"})
+    result = client.post(
+        "/api/ask", json={"question": "Atraso dos consumidores Kafka número de partições"}
+    )
     assert result.status_code == 200
     assert result.json()["citations"][0]["source"] == "runbooks/kafka-consumer-lag"
-    assert "partition count" in result.json()["answer"]
+    assert "número de partições" in result.json()["answer"]
     assert not result.json()["abstained"]
     assert result.headers["X-Request-ID"]
     assert client.post("/api/evaluations").json()["passed"] == 4
@@ -118,7 +120,7 @@ def test_llm_citation_contract(tmp_path, monkeypatch):
         client.post("/api/demo/seed")
         with app.state.sessions() as session:
             chunk_id = session.scalar(
-                select(Chunk.id).where(Chunk.text.like("%Kafka consumer lag%"))
+                select(Chunk.id).where(Chunk.text.like("%Atraso dos consumidores Kafka%"))
             )
 
         def provider(url, **kwargs):

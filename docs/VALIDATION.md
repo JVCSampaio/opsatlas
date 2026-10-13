@@ -1,27 +1,25 @@
-# Validation evidence
+# Validação
 
-Verified on 2026-10-13. Tested application revision: [`a97f307`](https://github.com/JVCSampaio/opsatlas/commit/a97f3073cd09ff604caf076c97e79d92442cf2d9). [All four CI jobs passed](https://github.com/JVCSampaio/opsatlas/actions/runs/38473866500).
+A versão inicial foi testada em 13/10/2026. A [CI da revisão a97f307](https://github.com/JVCSampaio/opsatlas/actions/runs/38473866500) passou nos quatro jobs.
 
-| Check | Observed result |
+| Verificação | Resultado da versão inicial |
 | --- | --- |
-| Python | 23 tests passed; local statement coverage 89%; Ruff lint/format passed |
-| Angular | Production build passed; estimated initial transfer about 40 kB |
-| Browser | Two Chromium journeys passed on Windows and Linux; desktop evidence/abstention/evaluation and mobile upload/layout |
-| Package | Python wheel and source distribution built successfully |
-| Compose | Real PostgreSQL, Kafka, indexing worker and MongoDB audit projection passed black-box smoke |
-| Observability | Prometheus scraped the API; provisioned four-panel Grafana dashboard verified through its API |
-| Airflow | DAG parsed, `seed` and `evaluate` executed through Airflow's DAG test engine; DagRun finished `success` with 4/4 retrieval checks |
-| Kubernetes | Isolated kind cluster created, persistent data services deployed, API/worker/web rolled out; Kafka ingestion and retrieval smoke passed |
+| Python | 23 testes; cobertura local de 89%; Ruff aprovado |
+| Angular | Build de produção aprovado |
+| Navegador | Consulta, fontes, pergunta sem resposta, avaliação e cadastro em celular |
+| Docker Compose | PostgreSQL, Kafka, worker e auditoria MongoDB testados pela API |
+| Observabilidade | Scrape do Prometheus e dashboard Grafana verificados |
+| Airflow | Tarefas de carga e avaliação executadas; DAG terminou com sucesso |
+| Kubernetes | Cluster kind, deploy dos serviços e teste de ingestão e consulta aprovados |
 
-The host Docker engine reported unavailable virtualization. Containers, Airflow and Kubernetes were therefore executed on Linux GitHub Actions runners. They were not claimed as locally executed on Windows. Screenshots came from real browser tests.
+API e interface foram testadas em Windows e Linux. Containers, Airflow e Kubernetes rodaram nos runners Linux do GitHub Actions: a máquina Windows usada na criação estava sem virtualização disponível.
 
-- [Python job](https://github.com/JVCSampaio/opsatlas/actions/runs/38473866500/job/115559547689)
-- [Browser job](https://github.com/JVCSampaio/opsatlas/actions/runs/38473866500/job/115559547375)
-- [Integration + Airflow job](https://github.com/JVCSampaio/opsatlas/actions/runs/38473866500/job/115559547551)
-- [Kubernetes job](https://github.com/JVCSampaio/opsatlas/actions/runs/38473866500/job/115559547858)
+As capturas de tela são geradas pelos testes de navegador. A CI atual fica disponível em [Actions](https://github.com/JVCSampaio/opsatlas/actions).
 
-Covered regressions include tenant scoping, document revisions, duplicate/stale indexing events, acknowledged outbox publishing, audit replay, invalid provider payloads, invented citations, invalid embedding batches and no-evidence abstention. A dependency emits a Starlette warning about the legacy httpx test adapter; the tests currently pass.
+## O que os testes não medem
 
-No local model server was active during the initial validation. The LLM HTTP adapter has provider-response contract tests, including token usage and invalid citations. This is not a measured evaluation of a real model's answer quality. The default demonstrated answer mode is extractive.
+A suíte de quatro perguntas verifica a seleção das fontes de exemplo e uma pergunta sem resposta. Ela não mede inteligência geral de um modelo.
 
-The four-case sample retrieval suite is visible and synthetic. It is a regression smoke, not an unseen benchmark. This project makes no economic or production-scale claims.
+Não havia servidor de LLM ativo na validação inicial. O adapter tem testes de contrato para respostas do provedor, citações, embeddings e uso de tokens. A qualidade de respostas de um modelo real não foi medida.
+
+O conjunto de desenvolvimento emite um aviso de depreciação do adapter httpx usado pelo Starlette. Os testes passam.
