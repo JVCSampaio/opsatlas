@@ -11,6 +11,24 @@ class GeneratedAnswer(BaseModel):
     abstained: bool
 
 
+class ProviderMessage(BaseModel):
+    content: str
+
+
+class ProviderChoice(BaseModel):
+    message: ProviderMessage
+
+
+class ProviderUsage(BaseModel):
+    prompt_tokens: int = Field(default=0, ge=0)
+    completion_tokens: int = Field(default=0, ge=0)
+
+
+class ProviderResponse(BaseModel):
+    choices: list[ProviderChoice] = Field(min_length=1)
+    usage: ProviderUsage = Field(default_factory=ProviderUsage)
+
+
 def answer(question: str, sources: list[dict], settings) -> dict:
     empty = {
         "answer": "I could not find evidence in the indexed runbooks. Try a more specific question.",
@@ -65,17 +83,17 @@ def answer(question: str, sources: list[dict], settings) -> dict:
         },
     )
     response.raise_for_status()
-    payload = response.json()
-    result = GeneratedAnswer.model_validate_json(payload["choices"][0]["message"]["content"])
+    payload = ProviderResponse.model_validate(response.json())
+    result = GeneratedAnswer.model_validate_json(payload.choices[0].message.content)
     allowed = {s["id"] for s in context}
     if (not result.abstained and not result.citation_ids) or set(result.citation_ids) - allowed:
         raise ValueError("The LLM returned unsupported citations")
     if result.abstained:
-        return {**empty, "usage": payload.get("usage", {})}
+        return {**empty, "usage": payload.usage.model_dump()}
     return {
         "answer": result.answer,
         "citations": [s for s in sources if s["id"] in result.citation_ids],
         "abstained": False,
         "mode": "llm",
-        "usage": payload.get("usage", {}),
+        "usage": payload.usage.model_dump(),
     }

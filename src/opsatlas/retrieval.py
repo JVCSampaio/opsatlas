@@ -43,9 +43,13 @@ def embed(texts: list[str], settings) -> list[list[float]]:
     rows = sorted(response.json()["data"], key=lambda row: row["index"])
     if len(rows) != len(texts):
         raise ValueError("Embedding provider returned an incomplete batch")
+    if [row["index"] for row in rows] != list(range(len(texts))):
+        raise ValueError("Embedding provider returned invalid batch indices")
     vectors = [row["embedding"] for row in rows]
     if not vectors or any(not v or any(not math.isfinite(x) for x in v) for v in vectors):
         raise ValueError("Invalid embedding vector")
+    if len({len(vector) for vector in vectors}) != 1:
+        raise ValueError("Embedding provider returned inconsistent dimensions")
     return vectors
 
 

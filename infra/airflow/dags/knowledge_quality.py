@@ -49,4 +49,9 @@ def knowledge_quality():
     evaluate(seed())
 
 
-knowledge_quality()
+workflow = knowledge_quality()
+
+if __name__ == "__main__":
+    result = workflow.test()
+    if result.state != "success":
+        raise RuntimeError(f"Airflow DAG test failed: {result.state}")
