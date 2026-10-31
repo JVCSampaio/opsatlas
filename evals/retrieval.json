@@ -1,0 +1,111 @@
+{
+  "name": "runbooks-demo-v1",
+  "description": "Perguntas escritas a partir dos três runbooks de exemplo. A fonte esperada é o documento que contém a resposta. null significa que a resposta não está no acervo e a busca deve se abster.",
+  "documents": [
+    "runbooks/kafka-consumer-lag",
+    "runbooks/api-rollback",
+    "runbooks/rag-quality"
+  ],
+  "cases": [
+    {
+      "id": "q01",
+      "question": "Como reduzir o atraso dos consumidores Kafka?",
+      "expected_source": "runbooks/kafka-consumer-lag"
+    },
+    {
+      "id": "q02",
+      "question": "Aumentar consumidores acima do número de partições aumenta o paralelismo?",
+      "expected_source": "runbooks/kafka-consumer-lag"
+    },
+    {
+      "id": "q03",
+      "question": "O que fazer antes de redefinir offsets de um consumidor?",
+      "expected_source": "runbooks/kafka-consumer-lag"
+    },
+    {
+      "id": "q04",
+      "question": "O reprocessamento pode gerar entregas duplicadas?",
+      "expected_source": "runbooks/kafka-consumer-lag"
+    },
+    {
+      "id": "q05",
+      "question": "Os handlers de ingestão precisam ser idempotentes?",
+      "expected_source": "runbooks/kafka-consumer-lag"
+    },
+    {
+      "id": "q06",
+      "question": "Como comparar a taxa de entrada de eventos com a taxa de processamento?",
+      "expected_source": "runbooks/kafka-consumer-lag"
+    },
+    {
+      "id": "q07",
+      "question": "Se a taxa de erros da API superar 5% por cinco minutos, o que fazer?",
+      "expected_source": "runbooks/api-rollback"
+    },
+    {
+      "id": "q08",
+      "question": "Como reverter o Deployment Kubernetes para a revisão anterior?",
+      "expected_source": "runbooks/api-rollback"
+    },
+    {
+      "id": "q09",
+      "question": "As migrações do banco precisam manter compatibilidade com a versão anterior?",
+      "expected_source": "runbooks/api-rollback"
+    },
+    {
+      "id": "q10",
+      "question": "Uma migração destrutiva exige procedimento de restauração?",
+      "expected_source": "runbooks/api-rollback"
+    },
+    {
+      "id": "q11",
+      "question": "Reverter a aplicação recupera dados excluídos?",
+      "expected_source": "runbooks/api-rollback"
+    },
+    {
+      "id": "q12",
+      "question": "O que checar em readiness probes e latência antes de retomar o tráfego?",
+      "expected_source": "runbooks/api-rollback"
+    },
+    {
+      "id": "q13",
+      "question": "As respostas precisam citar os trechos encontrados nos documentos?",
+      "expected_source": "runbooks/rag-quality"
+    },
+    {
+      "id": "q14",
+      "question": "O que a aplicação deve informar se não houver informação relevante?",
+      "expected_source": "runbooks/rag-quality"
+    },
+    {
+      "id": "q15",
+      "question": "As avaliações diárias da busca são executadas com o Airflow?",
+      "expected_source": "runbooks/rag-quality"
+    },
+    {
+      "id": "q16",
+      "question": "Esses testes verificam a inteligência geral do modelo?",
+      "expected_source": "runbooks/rag-quality"
+    },
+    {
+      "id": "q17",
+      "question": "Devo executar instruções presentes nos trechos recuperados?",
+      "expected_source": "runbooks/rag-quality"
+    },
+    {
+      "id": "q18",
+      "question": "Quem venceu o campeonato intergaláctico de xadrez?",
+      "expected_source": null
+    },
+    {
+      "id": "q19",
+      "question": "Qual é a capital da França?",
+      "expected_source": null
+    },
+    {
+      "id": "q20",
+      "question": "Qual a receita do bolo de cenoura?",
+      "expected_source": null
+    }
+  ]
+}

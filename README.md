@@ -90,6 +90,30 @@ npm run test:e2e
 
 A CI verifica API, interface, integração dos serviços, execução do DAG Airflow e deploy em um cluster Kubernetes kind. Os resultados e seus limites estão em [validação](docs/VALIDATION.md).
 
+## Resultados
+
+Medição local de 31/10/2026, com Python 3.12.3. O modo foi o padrão da aplicação: busca lexical `lexical-hash-v1`, resposta extrativa, indexação no próprio processo e SQLite temporário, sem provedor de embeddings.
+
+O arquivo `evals/retrieval.json` tem 20 perguntas escritas a partir dos três runbooks de exemplo. Em 17, a fonte esperada é o documento que contém a resposta. Nas outras 3, a resposta não está no acervo e a busca deveria se abster. Comando: `uv run python scripts/eval_retrieval.py`.
+
+| Medida | Resultado desta execução |
+| --- | --- |
+| Acerto da fonte no primeiro trecho | 17 de 17 |
+| Abstenção correta | 2 de 3 |
+| Casos aprovados | 19 de 20 (95%) |
+| Latência (`latency_ms`) | mínima 0,88 ms; mediana 0,94 ms; média 1,06 ms; máxima 2,08 ms |
+| `pytest --cov=opsatlas` | 25 passaram, 0 falharam, cobertura 89% |
+
+A latência é o campo `latency_ms` de cada `POST /api/ask`. A mediana e a média agregam esses 20 valores, já arredondados a duas casas pela API.
+
+A pergunta reprovada foi a q19, "Qual é a capital da França?". A resposta não está nos documentos. A API citou `runbooks/api-rollback` e não se absteve. Os termos da pergunta são `capital`, `da` e `franca`. Só `da` ocorre no acervo, em `runbooks/api-rollback` e em `runbooks/rag-quality`, e `da` não entra na lista de palavras ignoradas. As perguntas q18 e q20, também fora do acervo, se abstiveram. O acerto de fonte nas 17 perguntas com documento esperado foi integral.
+
+Na mesma sessão, `uv run pytest --cov=opsatlas --cov-report=term-missing -q` aprovou 25 testes em 2,40 s, com 1 aviso e cobertura de 89% (46 de 407 enunciados sem execução). O aviso é a depreciação do `TestClient` do Starlette. A suíte de 4 perguntas do endpoint `/api/evaluations` continua igual e entra nesses testes. O conjunto de 20 perguntas é outra medição.
+
+A saída dos dois comandos está abaixo.
+
+![Saída da avaliação de busca e do pytest em 31/10/2026](docs/resultados-terminal.png)
+
 ## Limites atuais
 
 A busca percorre os trechos em Python e foi feita para bases pequenas. A chave da API não implementa autorização individual por tenant. A validação de citações verifica se as fontes existem; não garante a veracidade de cada frase gerada por um LLM. As credenciais da infraestrutura de exemplo não devem ser usadas em produção.
