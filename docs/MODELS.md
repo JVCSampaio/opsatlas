@@ -20,10 +20,10 @@ O chat usa `/chat/completions` com saída JSON. São esperados os campos `answer
 
 Os embeddings usam `/embeddings`. A aplicação verifica índices do lote, quantidade de vetores, dimensões e valores finitos. A chave do provedor deve ficar no ambiente, fora do repositório.
 
-Sem modelo de embeddings, `lexical-hash-v1` usa características de palavras. A busca exige palavras em comum para evitar resultados causados apenas por colisões do hash.
+Sem modelo de embeddings, `lexical-hash-v2` usa características de palavras e ignora palavras funcionais, como artigos e preposições. A busca exige palavras em comum para evitar resultados causados apenas por colisões do hash ou por termos como "da" e "the".
 
 ## Reindexação
 
-Ao trocar o modelo de embeddings, reindexe os documentos. O projeto não mistura vetores de perfis diferentes. Na demonstração, pode-se recriar a base ou enviar uma revisão com conteúdo alterado. Para uma base real, é necessário um processo de reindexação em lote.
+Ao trocar o modelo de embeddings ou a versão do perfil lexical, reindexe os documentos. O projeto não mistura vetores de perfis diferentes. Na demonstração, pode-se recriar a base ou enviar uma revisão com conteúdo alterado. Para uma base real, é necessário um processo de reindexação em lote.
 
 A contagem de tokens vem do campo `usage` informado pelo provedor. O modo extrativo não gera tokens de LLM.

@@ -35,6 +35,10 @@ services:
       retries: 20
   mongo:
     image: mongo:8.0
+    # Ubuntu reports 7.0.0 for a 7.0.14 kernel. MongoDB 8.0 treats that
+    # string as incompatible while per-CPU TCMalloc caches are enabled.
+    environment:
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
     volumes: [mongo-data:/data/db]
     healthcheck:
       test: [CMD, mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]

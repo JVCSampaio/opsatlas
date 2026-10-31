@@ -41,6 +41,24 @@ def test_unknown_question_abstains(client):
     assert result["citations"] == []
 
 
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Qual é a capital da França?",
+        "Quem descobriu o Brasil?",
+        "Por que o céu é azul?",
+        "Onde fica a Torre Eiffel?",
+        "Quantos dias tem um ano bissexto?",
+        "What is the capital of France?",
+    ],
+)
+def test_question_sharing_only_function_words_abstains(client, question):
+    client.post("/api/demo/seed")
+    result = client.post("/api/ask", json={"question": question}).json()
+    assert result["abstained"]
+    assert result["citations"] == []
+
+
 def test_tenant_isolation(client):
     client.post("/api/demo/seed", headers={"X-Tenant": "alpha"})
     assert client.get("/api/documents", headers={"X-Tenant": "beta"}).json() == []

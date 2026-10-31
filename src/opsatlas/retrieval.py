@@ -9,8 +9,18 @@ from sqlalchemy import delete, select
 
 from opsatlas.db import Chunk, Document
 
+# Function words are not evidence: a question that shares only "da" or "the" with a
+# runbook must abstain. Entries are accent-free because terms() strips accents first.
 STOP = set(
-    "the a an and or to of in is for with how what when do does o a e de em para como qual os as".split()
+    """
+    a an and are as at be by can do does for from how in is it of on or that the this
+    to was what when where which who why with
+    o os as um uma uns umas de do da dos das em no na nos nas num numa ao aos por pelo
+    pela pelos pelas para pra com sem sob sobre entre ate apos ou mas nem que se como
+    qual quais quanto quantos quando onde quem porque eu voce ele ela eles elas isso
+    isto esse essa esses essas este esta estes estas meu minha seu sua seus suas sao
+    ser foi estao ha tem nao
+    """.split()
 )
 
 
@@ -54,7 +64,7 @@ def embed(texts: list[str], settings) -> list[list[float]]:
 
 
 def profile(settings) -> str:
-    return settings.embedding_model or "lexical-hash-v1"
+    return settings.embedding_model or "lexical-hash-v2"
 
 
 def split_chunks(text: str, size: int = 900) -> list[str]:
