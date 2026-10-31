@@ -51,6 +51,9 @@ spec:
       containers:
         - name: mongo
           image: mongo:8.0
+          # Same kernel check workaround as compose.yaml.
+          env:
+            - {name: GLIBC_TUNABLES, value: glibc.pthread.rseq=1}
           ports: [{containerPort: 27017}]
           resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: '1', memory: 512Mi}}
           readinessProbe: {exec: {command: [mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]}, initialDelaySeconds: 10}
