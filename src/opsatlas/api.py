@@ -18,7 +18,7 @@ from opsatlas import telemetry
 from opsatlas.config import Settings, get_settings
 from opsatlas.db import Audit, Chunk, Document, Outbox, connect, now
 from opsatlas.llm import answer
-from opsatlas.retrieval import index_document, retrieve
+from opsatlas.retrieval import index_document, profile, retrieve
 
 
 class DocumentInput(BaseModel):
@@ -262,7 +262,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "chunks": count(Chunk),
                 "events": count(Audit),
                 "llm_mode": settings.llm_mode,
-                "embedding_mode": settings.embedding_model or "lexical-hash-v1",
+                "embedding_mode": profile(settings),
                 "ingestion_mode": settings.ingestion_mode,
                 "activity": [
                     {"kind": a.kind, "created_at": a.created_at.isoformat(), "payload": a.payload}

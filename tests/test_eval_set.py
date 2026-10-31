@@ -32,17 +32,10 @@ def test_retrieval_set_is_labeled_from_the_demo_runbooks():
 
 def test_retrieval_set_measured_outcome():
     report = load_runner().run_set()
-    assert report["embedding_mode"] == "lexical-hash-v1"
+    assert report["embedding_mode"] == "lexical-hash-v2"
     assert report["llm_mode"] == "extractive"
     assert report["documents_ready"] == 3
-    assert report["source_hits"] == 17
     assert report["with_expected_source"] == 17
-    assert report["abstention_hits"] == 2
     assert report["abstention_cases"] == 3
-    assert report["passed"] == 19
-    assert report["total"] == 20
-    failed = [row for row in report["cases"] if not row["passed"]]
-    assert [row["id"] for row in failed] == ["q19"]
-    assert failed[0]["expected_source"] is None
-    assert failed[0]["obtained_source"] == "runbooks/api-rollback"
-    assert failed[0]["abstained"] is False
+    assert [row["id"] for row in report["cases"] if not row["passed"]] == []
+    assert report["passed"] == report["total"] == 20

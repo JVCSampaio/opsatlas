@@ -92,27 +92,23 @@ A CI verifica API, interface, integração dos serviços, execução do DAG Airf
 
 ## Resultados
 
-Medição local de 31/10/2026, com Python 3.12.3. O modo foi o padrão da aplicação: busca lexical `lexical-hash-v1`, resposta extrativa, indexação no próprio processo e SQLite temporário, sem provedor de embeddings.
+Medição local de 30/10/2026 (Windows 11, Python 3.13.13), no modo padrão da aplicação: busca lexical `lexical-hash-v2`, resposta extrativa, indexação no próprio processo e SQLite temporário, sem provedor de embeddings. Para reproduzir: `uv run python scripts/eval_retrieval.py`.
 
-O arquivo `evals/retrieval.json` tem 20 perguntas escritas a partir dos três runbooks de exemplo. Em 17, a fonte esperada é o documento que contém a resposta. Nas outras 3, a resposta não está no acervo e a busca deveria se abster. Comando: `uv run python scripts/eval_retrieval.py`.
+O arquivo `evals/retrieval.json` tem 20 perguntas escritas a partir dos três runbooks de exemplo. Em 17, a resposta está num runbook, e a fonte citada no primeiro trecho precisa ser ele. Nas outras 3, a resposta não está no acervo, e a busca precisa se abster.
 
-| Medida | Resultado desta execução |
+| Medida | Resultado |
 | --- | --- |
-| Acerto da fonte no primeiro trecho | 17 de 17 |
-| Abstenção correta | 2 de 3 |
-| Casos aprovados | 19 de 20 (95%) |
-| Latência (`latency_ms`) | mínima 0,88 ms; mediana 0,94 ms; média 1,06 ms; máxima 2,08 ms |
-| `pytest --cov=opsatlas` | 25 passaram, 0 falharam, cobertura 89% |
+| Fonte certa no primeiro trecho | 17 de 17 |
+| Abstenção correta | 3 de 3 |
+| Casos aprovados | 20 de 20 |
+| Latência (`latency_ms`) | mínima 1,42 ms, mediana 2,12 ms, máxima 14,36 ms |
+| `pytest --cov=opsatlas` | 33 testes aprovados, cobertura de 89% |
 
-A latência é o campo `latency_ms` de cada `POST /api/ask`. A mediana e a média agregam esses 20 valores, já arredondados a duas casas pela API.
+A latência é o campo `latency_ms` de cada `POST /api/ask`, medido dentro do processo, sem rede.
 
-A pergunta reprovada foi a q19, "Qual é a capital da França?". A resposta não está nos documentos. A API citou `runbooks/api-rollback` e não se absteve. Os termos da pergunta são `capital`, `da` e `franca`. Só `da` ocorre no acervo, em `runbooks/api-rollback` e em `runbooks/rag-quality`, e `da` não entra na lista de palavras ignoradas. As perguntas q18 e q20, também fora do acervo, se abstiveram. O acerto de fonte nas 17 perguntas com documento esperado foi integral.
+A primeira medição deu 19 de 20. "Qual é a capital da França?" citou `runbooks/api-rollback` em vez de se abster, porque a palavra `da` não estava na lista de palavras ignoradas e aparece nesse runbook. Outras perguntas fora do acervo, como "Por que o céu é azul?", tinham o mesmo defeito. A lista passou a cobrir artigos, preposições e pronomes do português, e o perfil lexical subiu de `v1` para `v2`, porque os vetores antigos foram calculados com a lista anterior (ver [reindexação](docs/MODELS.md#reindexação)). Os testes exigem 20 de 20 e incluem seis perguntas fora do acervo que só têm palavras funcionais em comum com os runbooks.
 
-Na mesma sessão, `uv run pytest --cov=opsatlas --cov-report=term-missing -q` aprovou 25 testes em 2,40 s, com 1 aviso e cobertura de 89% (46 de 407 enunciados sem execução). O aviso é a depreciação do `TestClient` do Starlette. A suíte de 4 perguntas do endpoint `/api/evaluations` continua igual e entra nesses testes. O conjunto de 20 perguntas é outra medição.
-
-A saída dos dois comandos está abaixo.
-
-![Saída da avaliação de busca e do pytest em 31/10/2026](docs/resultados-terminal.png)
+O conjunto é pequeno e saiu dos próprios runbooks. Ele confere se a busca acha a fonte e se abstém quando deve. A qualidade num acervo grande e variado exige outra avaliação.
 
 ## Limites atuais
 
@@ -122,4 +118,4 @@ Mais detalhes: [arquitetura](docs/ARCHITECTURE.md).
 
 ## Autor e licença
 
-[John Sampaio](https://github.com/JVCSampaio). Licença [MIT](LICENSE).
+[João Vitor Sampaio](https://github.com/JVCSampaio). Licença [MIT](LICENSE).
